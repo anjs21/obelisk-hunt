@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --parchment: #f7f0e3;
+  --gold: #b8941a;
+  --gold-light: #d4af37;
+  --ink: #2c1f14;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--parchment);
+  color: var(--ink);
+  font-family: Georgia, Cambria, serif;
+}
+
+/* Bottom drawer smooth slide */
+.drawer-enter {
+  transform: translateY(100%);
+}
+.drawer-open {
+  transform: translateY(0);
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-closed {
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Photo grid scrollbar hide */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
