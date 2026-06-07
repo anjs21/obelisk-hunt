@@ -34,30 +34,36 @@ export default function VisitForm({ obelisk, onSuccess, onCancel }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!name.trim()) {
+      setError('Please enter your name to claim this conquest.');
+      return;
+    }
+    if (!file) {
+      setError('A proof photo is required — no photo, no glory!');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
     try {
-      let photoUrl: string | null = null;
+      const ext = file.name.split('.').pop();
+      const path = `${obelisk.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('obelisk-photos')
+        .upload(path, file, { cacheControl: '3600', upsert: false });
 
-      if (file) {
-        const ext = file.name.split('.').pop();
-        const path = `${obelisk.id}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from('obelisk-photos')
-          .upload(path, file, { cacheControl: '3600', upsert: false });
+      if (uploadError) throw new Error(`Photo upload failed: ${uploadError.message}`);
 
-        if (uploadError) throw new Error(`Photo upload failed: ${uploadError.message}`);
-
-        const { data: urlData } = supabase.storage
-          .from('obelisk-photos')
-          .getPublicUrl(path);
-        photoUrl = urlData.publicUrl;
-      }
+      const { data: urlData } = supabase.storage
+        .from('obelisk-photos')
+        .getPublicUrl(path);
+      const photoUrl = urlData.publicUrl;
 
       const { error: insertError } = await supabase.from('visits').insert({
         obelisk_id: obelisk.id,
-        visitor_name: name.trim() || null,
+        visitor_name: name.trim(),
         photo_url: photoUrl,
         note: note.trim() || null,
       });
@@ -76,7 +82,7 @@ export default function VisitForm({ obelisk, onSuccess, onCancel }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
       <div>
         <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
-          Your name <span className="font-normal text-stone-400">(optional)</span>
+          Your name <span className="text-amber-600">*</span>
         </label>
         <input
           type="text"
@@ -84,6 +90,7 @@ export default function VisitForm({ obelisk, onSuccess, onCancel }: Props) {
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Marco"
           maxLength={60}
+          required
           className="w-full border border-stone-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
         />
       </div>
@@ -104,7 +111,7 @@ export default function VisitForm({ obelisk, onSuccess, onCancel }: Props) {
 
       <div>
         <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
-          Proof photo <span className="font-normal text-stone-400">(optional)</span>
+          Proof photo <span className="text-amber-600">*</span>
         </label>
         {preview ? (
           <div className="relative">
@@ -157,8 +164,8 @@ export default function VisitForm({ obelisk, onSuccess, onCancel }: Props) {
         </button>
         <button
           type="submit"
-          disabled={submitting}
-          className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl py-3 text-sm font-bold transition-colors"
+          disabled={submitting || !name.trim() || !file}
+          className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl py-3 text-sm font-bold transition-colors"
         >
           {submitting ? 'Saving…' : 'Mark as Visited!'}
         </button>
